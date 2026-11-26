@@ -65,7 +65,21 @@ const server = http.createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   if (web) {
     if (req.method === 'GET' && path === '/api/health') return send(res, 200, { ok: true, mode: 'hosted-demo' });
-    if (!web.authorized(req, res)) return;
+    const publicDemo = process.env.PUBLIC_DEMO === '1';
+    if (publicDemo) {
+      const allowed =
+        req.method === 'GET' ||
+        req.method === 'HEAD' ||
+        (req.method === 'POST' && path === '/api/quotes');
+
+      if (!allowed) {
+        return send(res, 403, {
+          message: 'This action is disabled in the public demo.',
+        });
+      }
+    } else {
+      if (!web.authorized(req, res)) return;
+    }
     if (path !== '/api' && !path.startsWith('/api/')) { void web.serve(req, res, path); return; }
   }
   return serial(async () => {
