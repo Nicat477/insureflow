@@ -1,0 +1,247 @@
+import http from 'node:http';
+import { hosting } from './hosting.mjs';
+import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { engine, DomainError } from './integrations.mjs';
+import { startMocks, mockClient } from './mocks.mjs';
+import { seed, validateClaim, claimStatuses, estimate } from './domain.mjs';
+import { resolve, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
+const root = process.env.DATA_DIR
+  ? pathToFileURL(resolve(process.env.DATA_DIR) + sep)
+  : new URL('./', import.meta.url);
+mkdirSync(root, { recursive: true });
+const file = new URL('data.json', root);
+let db;
+try {
+  db = JSON.parse(readFileSync(file, 'utf8'));
+} catch (e) {
+  if (e.code !== 'ENOENT') throw e;
+  db = structuredClone(seed);
+}
+function commit(next) {
+  const tmp = new URL('data.tmp', root);
+  writeFileSync(tmp, JSON.stringify(next, null, 2));
+  renameSync(tmp, file);
+  db = next;
+}
+function send(res, code, value) {
+  res.writeHead(code, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+  });
+  res.end(JSON.stringify(value));
+}
+async function body(req) {
+  let text = '';
+  for await (const chunk of req) {
+    text += chunk;
+    if (text.length > 16000) throw new Error('Request too large.');
+  }
+  return JSON.parse(text);
+}
+const hosted = process.env.HOSTED_DEMO === '1';
+const web = hosted ? hosting({ directory: process.env.STATIC_DIR, password: process.env.DEMO_PASSWORD }) : null;
+const allowedOrigins = [
+  'http://localhost:5173', 'http://127.0.0.1:5173',
+  'http://localhost:4173', 'http://127.0.0.1:4173',
+  ...(hosted && process.env.RENDER_EXTERNAL_URL ? [new URL(process.env.RENDER_EXTERNAL_URL).origin] : []),
+];
+const mocks = await startMocks(
+  process.env.MOCK_EPHEMERAL === '1' ? [0, 0, 0] : undefined,
+);
+console.log(
+  `Local demo mocks: Emlax ${mocks.ports[0]} | Bitrix24 ${mocks.ports[1]} | 1C ${mocks.ports[2]}`,
+);
+const external = mockClient(mocks.ports);
+const integration = engine({ read: () => db, commit, external });
+let queue = Promise.resolve();
+function serial(fn) {
+  const next = queue.then(fn);
+  queue = next.catch(() => {});
+  return next;
+}
+const server = http.createServer((req, res) => {
+  const path = new URL(req.url, 'http://localhost').pathname;
+  if (web) {
+    if (req.method === 'GET' && path === '/api/health') return send(res, 200, { ok: true, mode: 'hosted-demo' });
+    if (!web.authorized(req, res)) return;
+    if (path !== '/api' && !path.startsWith('/api/')) { void web.serve(req, res, path); return; }
+  }
+  return serial(async () => {
+    try {
+      if (
+        req.method !== 'GET' &&
+        req.headers.origin &&
+        !allowedOrigins.includes(req.headers.origin)
+      )
+        return send(res, 403, {
+          message: 'Origin not allowed for this local demo.',
+        });
+      if (
+        ['POST', 'PATCH'].includes(req.method) &&
+        !req.headers['content-type']?.startsWith('application/json')
+      )
+        return send(res, 415, { message: 'JSON request required.' });
+      if (req.method === 'GET' && path === '/api/integrations/status') {
+        const health = await external.health();
+        return send(res, 200, {
+          emlax: health[0],
+          bitrix24: health[1],
+          finance: health[2],
+        });
+      }
+      if (req.method === 'GET' && path === '/api/integrations/payments')
+        return send(res, 200, await external.payments());
+      if (req.method === 'GET' && path === '/api/integrations/deals')
+        return send(res, 200, await external.deals());
+      if (req.method === 'GET' && path === '/api/customers') {
+        const names = [
+          ...new Set([
+            ...db.policies.map((p) => p.customer),
+            ...(db.applications || []).map((a) => a.customer),
+          ]),
+        ];
+        const added = db.customers || [];
+        return send(res, 200, [
+          ...added,
+          ...names
+            .filter(
+              (n) =>
+                !added.some((c) => c.name.toLowerCase() === n.toLowerCase()),
+            )
+            .map((n) => ({
+              id: 'seed-' + n,
+              name: n,
+              email: '',
+              source: 'Insurance records',
+            })),
+        ]);
+      }
+      if (req.method === 'POST' && path === '/api/customers') {
+        const data = await body(req);
+        const name = typeof data?.name === 'string' ? data.name.trim() : '';
+        const email = typeof data?.email === 'string' ? data.email.trim() : '';
+        if (
+          name.length < 2 ||
+          name.length > 80 ||
+          email.length > 120 ||
+          (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        )
+          return send(res, 400, {
+            message: 'Enter a valid name and optional email.',
+          });
+        const existing = [
+          ...db.policies.map((p) => p.customer),
+          ...(db.applications || []).map((a) => a.customer),
+          ...(db.customers || []).map((c) => c.name),
+        ];
+        if (existing.some((n) => n.toLowerCase() === name.toLowerCase()))
+          return send(res, 409, { message: 'Customer already exists.' });
+        const item = {
+          id: 'CUS-' + randomUUID().slice(0, 8),
+          name,
+          email,
+          source: 'Manual demo',
+        };
+        commit({ ...db, customers: [item, ...(db.customers || [])] });
+        return send(res, 201, item);
+      }
+
+      if (req.method === 'GET' && path === '/api/health')
+        return send(res, 200, { ok: true, mode: 'local-demo' });
+      if (path.startsWith('/api/integrations')) {
+        const result = await (async () => {
+          if (req.method === 'GET' && path === '/api/integrations')
+            return integration.overview();
+          if (
+            req.method === 'POST' &&
+            path === '/api/integrations/applications'
+          )
+            return integration.create(
+              await body(req),
+              req.headers['idempotency-key'],
+            );
+          const m = path.match(
+            /^\/api\/integrations\/applications\/([^/]+)\/(sync|payment|reconcile|issue|reset-payment)$/,
+          );
+          if (req.method === 'POST' && m) {
+            const id = decodeURIComponent(m[1]);
+            const data = await body(req);
+            switch (m[2]) {
+              case 'sync':
+                return integration.sync(id, data.simulateFailure === true);
+              case 'payment':
+                return integration.demoPayment(id, data.scenario);
+              case 'reconcile':
+                return integration.reconcile(id);
+              case 'issue':
+                return integration.issue(id);
+              case 'reset-payment':
+                return integration.resetPayment(id);
+            }
+          }
+          throw new DomainError('Integration endpoint not found.', 404);
+        })();
+        return send(res, 200, result);
+      }
+      if (req.method === 'GET' && path === '/api/policies')
+        return send(res, 200, db.policies);
+      if (req.method === 'GET' && path === '/api/claims')
+        return send(res, 200, db.claims);
+      if (req.method === 'POST' && path === '/api/claims') {
+        const data = await body(req);
+        const error = validateClaim(data, db.policies);
+        if (error) return send(res, 400, { message: error });
+        const item = {
+          id: 'CLM-' + randomUUID().slice(0, 8).toUpperCase(),
+          policyId: data.policyId,
+          description: data.description.trim(),
+          amount: data.amount,
+          status: 'Pending',
+          date: new Date().toISOString().slice(0, 10),
+        };
+        commit({ ...db, claims: [item, ...db.claims] });
+        return send(res, 201, item);
+      }
+      if (req.method === 'PATCH' && path.startsWith('/api/claims/')) {
+        const id = decodeURIComponent(path.slice(12));
+        const data = await body(req);
+        if (!claimStatuses.includes(data?.status))
+          return send(res, 400, { message: 'Invalid status.' });
+        const item = db.claims.find((c) => c.id === id);
+        if (!item) return send(res, 404, { message: 'Claim not found.' });
+        const updated = { ...item, status: data.status };
+        commit({
+          ...db,
+          claims: db.claims.map((c) => (c.id === id ? updated : c)),
+        });
+        return send(res, 200, updated);
+      }
+      if (req.method === 'POST' && path === '/api/quotes') {
+        const data = await body(req);
+        return send(res, 200, {
+          premium: estimate(data.type, data.coverage, data.months),
+          currency: 'AZN',
+          illustrative: true,
+        });
+      }
+      return send(res, 404, { message: 'Endpoint not found.' });
+    } catch (e) {
+      if (e instanceof DomainError)
+        return send(res, e.status, { message: e.message });
+      return send(res, 400, {
+        message:
+          e instanceof SyntaxError
+            ? 'Invalid JSON.'
+            : e.message === 'Invalid quote parameters.'
+              ? e.message
+              : 'Request could not be completed.',
+      });
+    }
+  });
+});
+const host = hosted ? '0.0.0.0' : '127.0.0.1';
+server.listen(Number(process.env.PORT ?? 3001), host, () =>
+  console.log('InsureFlow demo API: http://' + host + ':' + server.address().port),
+);

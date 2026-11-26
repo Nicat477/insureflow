@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/*.log
+backend/server/data.json
+backend/server/mock-crm.json
+backend/server/mock-finance.json
+backend/server/*.tmp

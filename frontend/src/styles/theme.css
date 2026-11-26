@@ -1,0 +1,194 @@
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.129 0.042 264.695);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.129 0.042 264.695);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.129 0.042 264.695);
+  --primary: oklch(0.208 0.042 265.755);
+  --primary-foreground: oklch(0.984 0.003 247.858);
+  --secondary: oklch(0.968 0.007 247.896);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.554 0.046 257.417);
+  --accent: oklch(0.968 0.007 247.896);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.929 0.013 255.508);
+  --input: oklch(0.929 0.013 255.508);
+  --ring: oklch(0.704 0.04 256.788);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.14 0.04 259.21);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+}
+
+@theme inline {
+  --font-inter: 'Inter', 'sans-serif';
+  --font-manrope: 'Manrope', 'sans-serif';
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* InsureFlow Corporate Theme — Light Mode */
+
+:root {
+  --background: #f5f7fa;
+  --foreground: #183a2d;
+
+  --card: #ffffff;
+  --card-foreground: #183a2d;
+
+  --popover: #ffffff;
+  --popover-foreground: #183a2d;
+
+  --primary: #006b49;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e7f5ef;
+  --secondary-foreground: #006b49;
+
+  --muted: #edf3f0;
+  --muted-foreground: #54665d;
+
+  --accent: #dff3ea;
+  --accent-foreground: #004d35;
+
+  --destructive: #dc2626;
+
+  --border: #dee8e3;
+  --input: #a7bab0;
+  --ring: #009b70;
+
+  --chart-1: #006b49;
+  --chart-2: #009b70;
+  --chart-3: #009fcb;
+  --chart-4: #76c7ab;
+  --chart-5: #2563eb;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #183a2d;
+  --sidebar-primary: #006b49;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e7f5ef;
+  --sidebar-accent-foreground: #006b49;
+  --sidebar-border: #dee8e3;
+  --sidebar-ring: #009b70;
+}
+
+/* InsureFlow Corporate Theme — Dark Mode */
+
+.dark {
+  --background: #0d1916;
+  --foreground: #e8f4ef;
+
+  --card: #14241e;
+  --card-foreground: #e8f4ef;
+
+  --popover: #1a3026;
+  --popover-foreground: #e8f4ef;
+
+  --primary: #56d6a5;
+  --primary-foreground: #08251a;
+
+  --secondary: #234a3a;
+  --secondary-foreground: #d8f5e8;
+
+  --muted: #1c342a;
+  --muted-foreground: #a1b9ad;
+
+  --accent: #234a3a;
+  --accent-foreground: #78e1b5;
+
+  --destructive: #f87171;
+
+  --border: #294138;
+  --input: #526f60;
+  --ring: #56d6a5;
+
+  --chart-1: #56d6a5;
+  --chart-2: #009b70;
+  --chart-3: #38bdf8;
+  --chart-4: #a7f3d0;
+  --chart-5: #818cf8;
+
+  --sidebar: #14241e;
+  --sidebar-foreground: #e8f4ef;
+  --sidebar-primary: #56d6a5;
+  --sidebar-primary-foreground: #08251a;
+  --sidebar-accent: #234a3a;
+  --sidebar-accent-foreground: #78e1b5;
+  --sidebar-border: #294138;
+  --sidebar-ring: #56d6a5;
+}

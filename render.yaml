@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: insureflow-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: DEMO_PASSWORD
+        generateValue: true

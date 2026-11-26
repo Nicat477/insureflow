@@ -1,0 +1,1 @@
+{"name":"insureflow-api","version":"1.0.0","private":true,"type":"module","engines":{"node":">=22"},"scripts":{"dev":"node --watch server/index.mjs","start":"node server/index.mjs","test":"node --test server/*.test.mjs"}}
