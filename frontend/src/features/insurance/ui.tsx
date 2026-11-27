@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/locale'
 import type { ReactNode } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -11,12 +12,13 @@ export function Heading({
   description: string
   action?: ReactNode
 }) {
+  const { t } = useLocale()
   return (
     <header className="if-heading">
       <div>
-        <p className="if-eyebrow">INSUREFLOW / OPERATIONS</p>
-        <h1>{title}</h1>
-        <p>{description}</p>
+        <p className="if-eyebrow">{t("INSUREFLOW / OPERATIONS")}</p>
+        <h1>{t(title)}</h1>
+        <p>{t(description)}</p>
       </div>
       {action}
     </header>
@@ -31,15 +33,17 @@ export function Panel({
   description?: string
   children: ReactNode
 }) {
+  const { t } = useLocale()
   return (
     <section className="if-panel">
-      <h2>{title}</h2>
-      {description && <p className="if-muted mb-4">{description}</p>}
+      <h2>{t(title)}</h2>
+      {description && <p className="if-muted mb-4">{t(description)}</p>}
       {children}
     </section>
   )
 }
 export function Status({ value }: { value: string }) {
+  const { t } = useLocale()
   const tone = [
     'Active',
     'Approved',
@@ -58,7 +62,7 @@ export function Status({ value }: { value: string }) {
           )
         ? 'wait'
         : 'neutral'
-  return <span className={'if-status ' + tone}>{value}</span>
+  return <span className={'if-status ' + tone}>{t(value)}</span>
 }
 export function Table({
   headers,
@@ -69,6 +73,7 @@ export function Table({
   rows: { id: string; cells: ReactNode[] }[]
   empty?: string
 }) {
+  const { t } = useLocale()
   return rows.length ? (
     <div className="if-table-wrap">
       <table className="if-table">
@@ -76,7 +81,7 @@ export function Table({
           <tr>
             {headers.map((h) => (
               <th scope="col" key={h}>
-                {h}
+                {t(h)}
               </th>
             ))}
           </tr>
@@ -93,7 +98,7 @@ export function Table({
       </table>
     </div>
   ) : (
-    <p className="if-empty">{empty}</p>
+    <p className="if-empty">{t(empty)}</p>
   )
 }
 export function Field({
@@ -103,19 +108,21 @@ export function Field({
   label: string
   children: ReactNode
 }) {
+  const { t } = useLocale()
   return (
     <label className="if-field">
-      <span>{label}</span>
+      <span>{t(label)}</span>
       {children}
     </label>
   )
 }
 export function ErrorMessage({ error }: { error: unknown }) {
+  const { errorText } = useLocale()
   return error ? (
     <p role="alert" className="if-error">
       {error instanceof Error
-        ? error.message
-        : 'Something went wrong. Please retry.'}
+        ? errorText(error.message)
+        : errorText('Something went wrong. Please retry.')}
     </p>
   ) : null
 }
@@ -128,16 +135,14 @@ export function QueryState({
   error: unknown
   retry: () => void
 }) {
+  const { t } = useLocale()
   return loading ? (
-    <p role="status" className="if-empty">
-      Loading records…
-    </p>
+    <p role="status" className="if-empty">{t("Loading records…")}</p>
   ) : error ? (
     <div className="if-panel">
       <ErrorMessage error={error} />
       <Button variant="outline" onClick={retry}>
-        <RefreshCw /> Retry
-      </Button>
+        <RefreshCw />{t("Retry")}</Button>
     </div>
   ) : null
 }

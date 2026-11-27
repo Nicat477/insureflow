@@ -1,10 +1,11 @@
+import { useLocale } from '@/i18n/locale'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { api } from './api'
 import { integrations } from './integrationApi'
 import type { Action, Application } from './integrationApi'
-import { money, products, claimStatuses } from './types'
+import { products, claimStatuses } from './types'
 import type { Product, ClaimStatus } from './types'
 import {
   Heading,
@@ -19,6 +20,7 @@ import {
 } from './ui'
 
 export function Customers() {
+  const { t } = useLocale()
   const q = useData('customers', api.customers),
     [search, setSearch] = useState(''),
     [name, setName] = useState(''),
@@ -34,7 +36,7 @@ export function Customers() {
         description="View customer records and add fictional demo contacts."
         action={
           <Button onClick={() => setOpen(!open)}>
-            {open ? 'Close form' : '+ Add customer'}
+            {open ? t("Close form") : t("+ Add customer")}
           </Button>
         }
       />
@@ -78,23 +80,21 @@ export function Customers() {
             <ErrorMessage error={add.error} />
             <div>
               <Button disabled={add.isPending} type="submit">
-                {add.isPending ? 'Saving…' : 'Save customer'}
+                {add.isPending ? t("Saving…") : t("Save customer")}
               </Button>
             </div>
           </form>
         </Panel>
       )}
       {add.isSuccess && (
-        <p role="status" className="if-notice">
-          Customer saved.
-        </p>
+        <p role="status" className="if-notice">{t("Customer saved.")}</p>
       )}
       <Panel title="Customer directory">
         <div className="if-toolbar">
           <input
             className="if-search"
-            aria-label="Search customers"
-            placeholder="Search customers…"
+            aria-label={t("Search customers")}
+            placeholder={t("Search customers…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -111,12 +111,12 @@ export function Customers() {
               .filter((c) =>
                 [c.name, c.email]
                   .join(' ')
-                  .toLowerCase()
-                  .includes(search.toLowerCase()),
+                  .toLocaleLowerCase()
+                  .includes(search.toLocaleLowerCase()),
               )
               .map((c) => ({
                 id: c.id,
-                cells: [c.name, c.email || '—', c.source],
+                cells: [c.name, c.email || '—', t(c.source)],
               }))}
           />
         )}
@@ -132,13 +132,14 @@ const insuranceTabs = [
 ] as const
 export type InsuranceTab = (typeof insuranceTabs)[number][0]
 export function InsuranceWorkspace({ tab }: { tab: InsuranceTab }) {
+  const { t } = useLocale()
   return (
     <>
       <Heading
         title="Insurance"
         description="Manage policies, calculate premiums and issue property insurance."
       />
-      <nav aria-label="Insurance sections" className="if-tabs">
+      <nav aria-label={t("Insurance sections")} className="if-tabs">
         {insuranceTabs.map(([path, label]) => (
           <Link
             key={path}
@@ -146,7 +147,7 @@ export function InsuranceWorkspace({ tab }: { tab: InsuranceTab }) {
             aria-current={tab === path ? 'page' : undefined}
             className="if-tab"
           >
-            {label}
+            {t(label)}
           </Link>
         ))}
       </nav>
@@ -163,6 +164,7 @@ export function InsuranceWorkspace({ tab }: { tab: InsuranceTab }) {
   )
 }
 function Policies() {
+  const { t, money, date } = useLocale()
   const q = useData('policies', api.policies),
     [search, setSearch] = useState(''),
     [status, setStatus] = useState('All')
@@ -174,23 +176,23 @@ function Policies() {
       <div className="if-toolbar">
         <input
           className="if-search"
-          aria-label="Search policies"
-          placeholder="Search policy, customer or product…"
+          aria-label={t("Search policies")}
+          placeholder={t("Search policy, customer or product…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <select
           className="if-select max-w-40"
-          aria-label="Filter policy status"
+          aria-label={t("Filter policy status")}
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
           {['All', 'Active', 'Pending', 'Expired'].map((s) => (
-            <option key={s}>{s}</option>
+            <option key={s} value={s}>{t(s)}</option>
           ))}
         </select>
         <Button asChild variant="outline">
-          <Link to="/applications">New application</Link>
+          <Link to="/applications">{t("New application")}</Link>
         </Button>
       </div>
       <QueryState
@@ -212,19 +214,19 @@ function Policies() {
             .filter(
               (p) =>
                 (status === 'All' || p.status === status) &&
-                [p.id, p.customer, p.type]
+                [p.id, p.customer, p.type, t(p.type)]
                   .join(' ')
-                  .toLowerCase()
-                  .includes(search.toLowerCase()),
+                  .toLocaleLowerCase()
+                  .includes(search.toLocaleLowerCase()),
             )
             .map((p) => ({
               id: p.id,
               cells: [
                 p.id,
                 p.customer,
-                p.type,
+                t(p.type),
                 money(p.premium),
-                `${p.start} – ${p.end}`,
+                `${date(p.start)} – ${date(p.end)}`,
                 <Status value={p.status} />,
               ],
             }))}
@@ -234,6 +236,7 @@ function Policies() {
   )
 }
 function Calculator() {
+  const { t, money, months: monthLabel } = useLocale()
   const [type, setType] = useState<Product>('Property'),
     [coverage, setCoverage] = useState('100000'),
     [months, setMonths] = useState('12')
@@ -267,7 +270,7 @@ function Calculator() {
               }}
             >
               {products.map((p) => (
-                <option key={p}>{p}</option>
+                <option key={p} value={p}>{t(p)}</option>
               ))}
             </select>
           </Field>
@@ -295,36 +298,32 @@ function Calculator() {
             >
               {[1, 3, 6, 12].map((m) => (
                 <option key={m} value={m}>
-                  {m} month{m > 1 ? 's' : ''}
+                  {monthLabel(m)}
                 </option>
               ))}
             </select>
           </Field>
           <ErrorMessage error={quote.error} />
           <Button disabled={quote.isPending} type="submit">
-            {quote.isPending ? 'Calculating…' : 'Calculate premium'}
+            {quote.isPending ? t("Calculating…") : t("Calculate premium")}
           </Button>
         </form>
       </Panel>
       <Panel title="Estimated premium">
-        <p className="if-muted">
-          Illustrative pricing only, not an official insurance quote.
-        </p>
+        <p className="if-muted">{t("Illustrative pricing only, not an official insurance quote.")}</p>
         <p className="if-amount my-5" aria-live="polite">
           {quote.data ? money(quote.data.premium) : '—'}
         </p>
-        <p className="if-muted mb-4">
-          Property reservations can be turned into applications through the
-          Emlax demo.
-        </p>
+        <p className="if-muted mb-4">{t("Property reservations can be turned into applications through the Emlax demo.")}</p>
         <Button asChild variant="outline">
-          <Link to="/applications">Go to applications</Link>
+          <Link to="/applications">{t("Go to applications")}</Link>
         </Button>
       </Panel>
     </div>
   )
 }
 function Properties() {
+  const { t, money } = useLocale()
   const q = useData('integrations', integrations.load)
   return (
     <Panel
@@ -354,7 +353,7 @@ function Properties() {
             }))}
           />
           <Button asChild className="mt-4">
-            <Link to="/applications">Create insurance application</Link>
+            <Link to="/applications">{t("Create insurance application")}</Link>
           </Button>
         </>
       )}
@@ -362,6 +361,7 @@ function Properties() {
   )
 }
 function Applications() {
+  const { t, money } = useLocale()
   const q = useData('integrations', integrations.load),
     [property, setProperty] = useState(''),
     [key, setKey] = useState(() => crypto.randomUUID()),
@@ -426,7 +426,7 @@ function Applications() {
                     setKey(crypto.randomUUID())
                   }}
                 >
-                  <option value="">Select a reservation</option>
+                  <option value="">{t("Select a reservation")}</option>
                   {available.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.unit} — {p.customer}
@@ -435,14 +435,12 @@ function Applications() {
                 </select>
               </Field>
               {!available.length && (
-                <p className="if-muted">
-                  No unused reservations are available.
-                </p>
+                <p className="if-muted">{t("No unused reservations are available.")}</p>
               )}
               <ErrorMessage error={create.error} />
               <div>
                 <Button type="submit" disabled={!property || create.isPending}>
-                  {create.isPending ? 'Creating…' : 'Create application'}
+                  {create.isPending ? t("Creating…") : t("Create application")}
                 </Button>
               </div>
             </form>
@@ -472,7 +470,7 @@ function Applications() {
                       setScenario('exact')
                     }}
                   >
-                    {a?.id === x.id ? 'Selected' : 'View'}
+                    {a?.id === x.id ? t("Selected") : t("View")}
                   </Button>,
                 ],
               }))}
@@ -481,50 +479,44 @@ function Applications() {
           </Panel>
           {a && (
             <Panel
-              title={`Application ${a.id}`}
+              title={`${t('Application')} ${a.id}`}
               description={`${a.customer} · ${a.unit} · ${money(a.premiumMinor / 100)}`}
             >
               <div className="if-card-list">
                 <div className="if-step">
                   <div className="flex justify-between gap-2">
-                    <h3>1. Sync customer with CRM</h3>
+                    <h3>{t("1. Sync customer with CRM")}</h3>
                     <Status value={a.crm} />
                   </div>
-                  <p>
-                    Create a Bitrix24 demo deal. A failed request can safely be
-                    retried.
-                  </p>
+                  <p>{t("Create a Bitrix24 demo deal. A failed request can safely be retried.")}</p>
                   <div className="if-actions">
                     <Button
                       size="sm"
                       disabled={act.isPending || a.crm === 'Synced'}
                       onClick={() => action(a, 'sync')}
                     >
-                      {a.crm === 'Failed' ? 'Retry CRM sync' : 'Sync CRM'}
+                      {a.crm === 'Failed' ? t("Retry CRM sync") : t("Sync CRM")}
                     </Button>
                     {a.crmId && <span className="if-muted">{a.crmId}</span>}
                   </div>
                 </div>
                 <div className="if-step">
                   <div className="flex justify-between gap-2">
-                    <h3>2. Match the payment</h3>
+                    <h3>{t("2. Match the payment")}</h3>
                     <Status value={a.payment} />
                   </div>
-                  <p>
-                    Generate a fictional payment, then match its reference and
-                    amount.
-                  </p>
+                  <p>{t("Generate a fictional payment, then match its reference and amount.")}</p>
                   <div className="if-actions">
                     <select
-                      aria-label="Demo payment scenario"
+                      aria-label={t("Demo payment scenario")}
                       className="if-select max-w-48"
                       value={scenario}
                       onChange={(e) => setScenario(e.target.value)}
                       disabled={a.status !== 'Awaiting payment'}
                     >
-                      <option value="exact">Exact amount</option>
-                      <option value="wrong">Wrong amount (test)</option>
-                      <option value="duplicate">Duplicate (test)</option>
+                      <option value="exact">{t("Exact amount")}</option>
+                      <option value="wrong">{t("Wrong amount (test)")}</option>
+                      <option value="duplicate">{t("Duplicate (test)")}</option>
                     </select>
                     <Button
                       size="sm"
@@ -535,36 +527,30 @@ function Applications() {
                         a.payment === 'Needs review'
                       }
                       onClick={() => action(a, 'payment', { scenario })}
-                    >
-                      Generate demo payment
-                    </Button>
+                    >{t("Generate demo payment")}</Button>
                     <Button
                       size="sm"
                       disabled={
                         act.isPending || a.status !== 'Awaiting payment'
                       }
                       onClick={() => action(a, 'reconcile')}
-                    >
-                      Match payment
-                    </Button>
+                    >{t("Match payment")}</Button>
                     {a.payment === 'Needs review' && (
                       <Button
                         size="sm"
                         variant="outline"
                         disabled={act.isPending}
                         onClick={() => action(a, 'reset-payment')}
-                      >
-                        Clear incorrect demo payment
-                      </Button>
+                      >{t("Clear incorrect demo payment")}</Button>
                     )}
                   </div>
                 </div>
                 <div className="if-step">
                   <div className="flex justify-between gap-2">
-                    <h3>3. Issue policy</h3>
+                    <h3>{t("3. Issue policy")}</h3>
                     <Status value={a.status} />
                   </div>
-                  <p>Requires a synced CRM record and a matched payment.</p>
+                  <p>{t("Requires a synced CRM record and a matched payment.")}</p>
                   <div className="if-actions">
                     <Button
                       size="sm"
@@ -574,27 +560,21 @@ function Applications() {
                         a.status !== 'Paid'
                       }
                       onClick={() => action(a, 'issue')}
-                    >
-                      Issue policy
-                    </Button>
+                    >{t("Issue policy")}</Button>
                     {a.policyId && (
                       <Button asChild variant="outline" size="sm">
-                        <Link to="/policies">View {a.policyId}</Link>
+                        <Link to="/policies">{t('View')} {a.policyId}</Link>
                       </Button>
                     )}
                   </div>
                 </div>
               </div>
               {act.isPending && (
-                <p className="if-muted mt-3" role="status">
-                  Processing…
-                </p>
+                <p className="if-muted mt-3" role="status">{t("Processing…")}</p>
               )}
               <ErrorMessage error={act.error} />
               {act.isSuccess && (
-                <p className="if-notice mt-3" role="status">
-                  Request processed. Check the updated status above.
-                </p>
+                <p className="if-notice mt-3" role="status">{t("Request processed. Check the updated status above.")}</p>
               )}
             </Panel>
           )}
@@ -604,6 +584,7 @@ function Applications() {
   )
 }
 export function Claims() {
+  const { t, money, date } = useLocale()
   const q = useData('claims', api.claims),
     p = useData('policies', api.policies),
     [open, setOpen] = useState(false),
@@ -623,7 +604,7 @@ export function Claims() {
         description="Submit and track claims for active insurance policies."
         action={
           <Button onClick={() => setOpen(!open)}>
-            {open ? 'Close form' : '+ Create claim'}
+            {open ? t("Close form") : t("+ Create claim")}
           </Button>
         }
       />
@@ -658,7 +639,7 @@ export function Claims() {
                   value={policyId}
                   onChange={(e) => setPolicyId(e.target.value)}
                 >
-                  <option value="">Choose a policy</option>
+                  <option value="">{t("Choose a policy")}</option>
                   {p.data
                     ?.filter((x) => x.status === 'Active')
                     .map((x) => (
@@ -692,34 +673,32 @@ export function Claims() {
             <ErrorMessage error={add.error} />
             <div>
               <Button type="submit" disabled={add.isPending || !policyId}>
-                {add.isPending ? 'Submitting…' : 'Submit claim'}
+                {add.isPending ? t("Submitting…") : t("Submit claim")}
               </Button>
             </div>
           </form>
         </Panel>
       )}
       {add.isSuccess && (
-        <p className="if-notice" role="status">
-          Claim submitted successfully.
-        </p>
+        <p className="if-notice" role="status">{t("Claim submitted successfully.")}</p>
       )}
       <Panel title="Claim records">
         <div className="if-toolbar">
           <input
             className="if-search"
-            aria-label="Search claims"
-            placeholder="Search claims…"
+            aria-label={t("Search claims")}
+            placeholder={t("Search claims…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <select
             className="if-select max-w-40"
-            aria-label="Filter claims"
+            aria-label={t("Filter claims")}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
             {['All', ...claimStatuses].map((s) => (
-              <option key={s}>{s}</option>
+              <option key={s} value={s}>{t(s)}</option>
             ))}
           </select>
         </div>
@@ -745,8 +724,8 @@ export function Claims() {
                   (filter === 'All' || filter === x.status) &&
                   [x.id, x.policyId, x.description]
                     .join(' ')
-                    .toLowerCase()
-                    .includes(search.toLowerCase()),
+                    .toLocaleLowerCase()
+                    .includes(search.toLocaleLowerCase()),
               )
               .map((x) => ({
                 id: x.id,
@@ -757,11 +736,11 @@ export function Claims() {
                   </>,
                   x.description,
                   money(x.amount),
-                  x.date,
+                  date(x.date),
                   <Status value={x.status} />,
                   <select
                     className="if-select min-w-30"
-                    aria-label={`Change status of ${x.id}`}
+                    aria-label={`${t('Update status')}: ${x.id}`}
                     value={x.status}
                     disabled={update.isPending}
                     onChange={(e) =>
@@ -772,7 +751,7 @@ export function Claims() {
                     }
                   >
                     {claimStatuses.map((s) => (
-                      <option key={s}>{s}</option>
+                      <option key={s} value={s}>{t(s)}</option>
                     ))}
                   </select>,
                 ],
@@ -784,6 +763,7 @@ export function Claims() {
   )
 }
 export function Payments() {
+  const { t, money } = useLocale()
   const q = useData('payments', integrations.payments),
     a = useData('integrations', integrations.load)
   return (
@@ -793,7 +773,7 @@ export function Payments() {
         description="Review simulated 1C payment records and matching results."
         action={
           <Button asChild>
-            <Link to="/applications">Match a payment</Link>
+            <Link to="/applications">{t("Match a payment")}</Link>
           </Button>
         }
       />
@@ -841,6 +821,7 @@ export function Payments() {
   )
 }
 export function IntegrationCenter() {
+  const { t, money, errorText } = useLocale()
   const h = useData('health', integrations.health),
     q = useData('integrations', integrations.load),
     d = useData('deals', integrations.deals)
@@ -860,9 +841,7 @@ export function IntegrationCenter() {
               void q.refetch()
               void d.refetch()
             }}
-          >
-            Refresh status
-          </Button>
+          >{t("Refresh status")}</Button>
         }
       />
       <QueryState
@@ -899,9 +878,9 @@ export function IntegrationCenter() {
                 h.isPending ? 'Checking' : s.ok ? 'Connected' : 'Unavailable'
               }
             />
-            <p className="if-muted my-3">{s.description} · Local simulation</p>
+            <p className="if-muted my-3">{t(s.description)} · {t('Local simulation')}</p>
             <Button asChild variant="outline" size="sm">
-              <Link to={s.path}>Open workspace</Link>
+              <Link to={s.path}>{t("Open workspace")}</Link>
             </Button>
           </Panel>
         ))}
@@ -925,7 +904,7 @@ export function IntegrationCenter() {
                 j.applicationId,
                 <Status value={j.status} />,
                 j.attempts,
-                j.error || '—',
+                j.error ? errorText(j.error) : '—',
               ],
             }))}
             empty="No events yet."
@@ -933,17 +912,12 @@ export function IntegrationCenter() {
         )}
         {q.data?.outbox.some((j) => j.status === 'Failed') && (
           <Button asChild variant="outline" className="mt-3">
-            <Link to="/applications">Retry from applications</Link>
+            <Link to="/applications">{t("Retry from applications")}</Link>
           </Button>
         )}
         <details className="mt-4 text-sm">
-          <summary className="cursor-pointer font-medium">
-            Optional failure simulation
-          </summary>
-          <p className="if-muted my-2">
-            Demonstrate safe retries by simulating a CRM outage before
-            synchronization.
-          </p>
+          <summary className="cursor-pointer font-medium">{t("Optional failure simulation")}</summary>
+          <p className="if-muted my-2">{t("Demonstrate safe retries by simulating a CRM outage before synchronization.")}</p>
           {q.data?.outbox
             .filter((j) => j.status === 'Pending')
             .map((j) => (
@@ -955,11 +929,11 @@ export function IntegrationCenter() {
                 className="me-2 mb-2"
                 onClick={() => act.mutate(j.applicationId)}
               >
-                Simulate failure: {j.applicationId}
+                {t('Simulate failure:')} {j.applicationId}
               </Button>
             ))}
           {!q.data?.outbox.some((j) => j.status === 'Pending') && (
-            <p className="if-muted">Create a new application first.</p>
+            <p className="if-muted">{t("Create a new application first.")}</p>
           )}
         </details>
       </Panel>

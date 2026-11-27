@@ -1,10 +1,12 @@
+import { useLocale } from '@/i18n/locale'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { api } from './api'
 import { integrations } from './integrationApi'
-import { money, products } from './types'
+import { products } from './types'
 import { Heading, Panel, Status, Table, QueryState, useData } from './ui'
 export default function InsuranceOverview() {
+  const { t, money } = useLocale()
   const policies = useData('policies', api.policies),
     claims = useData('claims', api.claims),
     customers = useData('customers', api.customers),
@@ -19,7 +21,7 @@ export default function InsuranceOverview() {
         description="Manage policies, claims and insurance operations in one place."
         action={
           <Button asChild>
-            <Link to="/calculator">+ New insurance quote</Link>
+            <Link to="/calculator">{t("+ New insurance quote")}</Link>
           </Button>
         }
       />
@@ -56,7 +58,7 @@ export default function InsuranceOverview() {
               ],
             ].map(([label, value]) => (
               <div className="if-metric" key={label}>
-                <span>{label}</span>
+                <span>{t(String(label))}</span>
                 <strong>{value}</strong>
               </div>
             ))}
@@ -71,13 +73,13 @@ export default function InsuranceOverview() {
                 return (
                   <div key={p}>
                     <div className="flex justify-between text-sm">
-                      <span>{p}</span>
+                      <span>{t(p)}</span>
                       <strong>{count}</strong>
                     </div>
                     <div
                       className="if-bar"
                       role="meter"
-                      aria-label={p}
+                      aria-label={t(p)}
                       aria-valuenow={count}
                       aria-valuemin={0}
                       aria-valuemax={Math.max(1, data.length)}
@@ -102,7 +104,7 @@ export default function InsuranceOverview() {
                 ['1C Finance', health.data?.finance],
               ].map(([name, ok]) => (
                 <div key={String(name)} className="if-line">
-                  <span>{name}</span>
+                  <span>{t(String(name))}</span>
                   <Status
                     value={
                       health.isPending
@@ -115,20 +117,20 @@ export default function InsuranceOverview() {
                 </div>
               ))}
               <Button asChild variant="outline" className="mt-3">
-                <Link to="/integrations">Integration center</Link>
+                <Link to="/integrations">{t("Integration center")}</Link>
               </Button>
             </Panel>
           </div>
           <Panel title="Quick actions">
             <div className="if-actions">
               <Button asChild variant="outline">
-                <Link to="/customers">Add customer</Link>
+                <Link to="/customers">{t("Add customer")}</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to="/claims">Create claim</Link>
+                <Link to="/claims">{t("Create claim")}</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to="/applications">New application</Link>
+                <Link to="/applications">{t("New application")}</Link>
               </Button>
             </div>
           </Panel>
@@ -149,7 +151,7 @@ export default function InsuranceOverview() {
                 }))}
             />
             <Button asChild variant="outline" className="mt-3">
-              <Link to="/claims">View all claims</Link>
+              <Link to="/claims">{t("View all claims")}</Link>
             </Button>
           </Panel>
         </>

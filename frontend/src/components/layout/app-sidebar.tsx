@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/locale'
 import { Link } from '@tanstack/react-router'
 import { ShieldCheck, Settings } from 'lucide-react'
 import { useLayout } from '@/context/layout-provider'
@@ -12,6 +13,7 @@ import {
 import { sidebarData } from './data/sidebar-data'
 import { NavGroup } from './nav-group'
 export function AppSidebar() {
+  const { t } = useLocale()
   const { collapsible, variant } = useLayout()
   const { setOpenMobile } = useSidebar()
   return (
@@ -27,9 +29,7 @@ export function AppSidebar() {
           </span>
           <span className="min-w-0 group-data-[collapsible=icon]:hidden">
             <strong className="block text-lg font-bold">InsureFlow</strong>
-            <span className="block truncate text-xs text-muted-foreground">
-              Insurance management
-            </span>
+            <span className="block truncate text-xs text-muted-foreground">{t("Insurance management")}</span>
           </span>
         </Link>
       </SidebarHeader>
@@ -45,11 +45,11 @@ export function AppSidebar() {
           className="flex items-center gap-2 rounded-md p-2 text-sm hover:bg-sidebar-accent"
         >
           <Settings className="size-4 shrink-0" />
-          <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+          <span className="group-data-[collapsible=icon]:hidden">{t("Settings")}</span>
         </Link>
         <div className="rounded-lg border p-3 text-xs group-data-[collapsible=icon]:hidden">
-          <strong>Demo workspace</strong>
-          <p className="mt-1 text-muted-foreground">Fictional records only</p>
+          <strong>{t("Demo workspace")}</strong>
+          <p className="mt-1 text-muted-foreground">{t("Fictional records only")}</p>
         </div>
       </SidebarFooter>
       <SidebarRail />

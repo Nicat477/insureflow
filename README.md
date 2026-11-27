@@ -1,5 +1,9 @@
 # InsureFlow — Insurance Management Portal
 
+[Azərbaycan dili](README.az.md) · English
+
+The main insurance workspace supports Azerbaijani (default) and English; use the AZ/EN switch in the header. The preference is stored in the browser.
+
 A full-stack portfolio demo that brings everyday insurance operations into a simple six-section workspace. Built with React, TypeScript and Node.js on the MIT-licensed [Shadcn Admin](https://github.com/satnaing/shadcn-admin) template.
 
 > Independent educational project. All records, premiums, payments and integration responses are fictional. Emlax, Bitrix24 and 1C are simulated locally; this is not an official product or a connection to any real insurer or vendor. Do not enter personal or financial information.
