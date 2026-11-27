@@ -236,11 +236,11 @@ export const azMessages: Record<string, string> = {
 }
 export type Language = 'az' | 'en'
 export function translate(language: Language, text: string): string {
-  return language === 'az' && Object.hasOwn(azMessages, text) ? azMessages[text] : text
+  return language === 'az' && Object.prototype.hasOwnProperty.call(azMessages, text) ? azMessages[text] : text
 }
 export function translateError(language: Language, message: string): string {
   if (language === 'en') return message
-  return Object.hasOwn(azMessages, message) ? azMessages[message] : azMessages['Something went wrong. Please retry.']
+  return Object.prototype.hasOwnProperty.call(azMessages, message) ? azMessages[message] : azMessages['Something went wrong. Please retry.']
 }
 export function formatMoney(language: Language, value: number): string {
   return new Intl.NumberFormat(language === 'az' ? 'az-AZ' : 'en-AZ', { style: 'currency', currency: 'AZN', maximumFractionDigits: 2 }).format(value)
