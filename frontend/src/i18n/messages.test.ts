@@ -18,3 +18,10 @@ describe('InsureFlow localization', () => {
     expect(formatDate('az', 'unknown')).toBe('unknown')
   })
 })
+
+it('translates Russian status and notification messages', () => {
+  expect(translate('ru', 'Awaiting payment')).toBe('Ожидается оплата')
+  expect(translate('ru', 'Policy issued successfully.')).toBe('Полис успешно оформлен.')
+  expect(translate('az', 'Payment matched successfully.')).toBe('Ödənişin uyğunluğu uğurla təsdiqləndi.')
+  expect(translateError('ru', 'unknown')).toBe('Произошла ошибка. Повторите попытку.')
+})

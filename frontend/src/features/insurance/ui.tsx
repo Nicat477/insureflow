@@ -1,4 +1,6 @@
-import { useLocale } from '@/i18n/locale'
+import { Link } from '@tanstack/react-router'
+import { useLocale, currentText } from '@/i18n/locale'
+import { toast } from 'sonner'
 import type { ReactNode } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -14,7 +16,18 @@ export function Heading({
 }) {
   const { t } = useLocale()
   return (
-    <header className="if-heading">
+    <>
+      {title === 'Dashboard' && (
+        <section className="if-dashboard-hero" aria-label={t('Baku skyline dashboard banner')}>
+          <div className="if-dashboard-hero__overlay">
+            <span className="if-dashboard-hero__eyebrow">{t('Digital insurance portal')}</span>
+            <h2>{t('Insurance, made simpler.')}</h2>
+            <p>{t('Quotes, policies, claims and payments from a single workspace.')}</p>
+            <div className="if-actions"><Button asChild><Link to="/applications">{t('New application')}</Link></Button></div>
+          </div>
+        </section>
+      )}
+      <header className="if-heading">
       <div>
         <p className="if-eyebrow">{t("INSUREFLOW / OPERATIONS")}</p>
         <h1>{t(title)}</h1>
@@ -22,6 +35,7 @@ export function Heading({
       </div>
       {action}
     </header>
+    </>
   )
 }
 export function Panel({
@@ -137,7 +151,7 @@ export function QueryState({
 }) {
   const { t } = useLocale()
   return loading ? (
-    <p role="status" className="if-empty">{t("Loading records…")}</p>
+    <div className="if-v6-skeleton" role="status" aria-label={t('Loading records…')}><span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" /><p className="sr-only">{t('Loading records…')}</p></div>
   ) : error ? (
     <div className="if-panel">
       <ErrorMessage error={error} />
@@ -154,10 +168,48 @@ export function useData<T>(key: string, fn: () => Promise<T>) {
     staleTime: 0,
   })
 }
-export function useAction<T, V>(fn: (value: V) => Promise<T>) {
+// Report business outcomes, not just an HTTP 200 response.
+function notifyOutcome(result: unknown, variables: unknown, message: string) {
+  const data = result && typeof result === 'object' ? result as Record<string, unknown> : {}
+  const input = variables && typeof variables === 'object' ? variables as Record<string, unknown> : {}
+  const success = (key: string) => toast.success(currentText(key))
+  const warn = (key: string) => toast.warning(currentText(key))
+  if (message === 'CRM failure simulated. Retry from applications.') {
+    if (data.crm === 'Failed') warn(message)
+    else toast.info(currentText('CRM response received. Check the current status.'))
+    return
+  }
+  switch (input.action) {
+    case 'sync':
+      if (data.crm === 'Synced') success('CRM synchronized successfully.')
+      else toast.error(currentText('CRM synchronization failed. Please retry.'))
+      return
+    case 'payment': {
+      const scenario = (input.data as { scenario?: string } | undefined)?.scenario
+      if (scenario === 'wrong' || scenario === 'duplicate') warn('Test payment created. Verify the payment before issuing a policy.')
+      else success('Demo payment created successfully.')
+      return
+    }
+    case 'reconcile':
+      if (data.payment === 'Matched') success('Payment matched successfully.')
+      else if (data.payment === 'Needs review') warn('Payment requires review. Check the amount or duplicates.')
+      else warn('No matching payment found.')
+      return
+    case 'issue':
+      if (data.status === 'Policy issued') success('Policy issued successfully.')
+      else toast.info(currentText('Request processed. Check the updated status above.'))
+      return
+    case 'reset-payment': success('Incorrect demo payment cleared.'); return
+    default: success(message)
+  }
+}
+export function useAction<T, V>(fn: (value: V) => Promise<T>, message = 'Operation completed successfully.') {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['insurance'] }),
+    onSuccess: (data, variables) => {
+      notifyOutcome(data, variables, message)
+      return qc.invalidateQueries({ queryKey: ['insurance'] })
+    },
   })
 }

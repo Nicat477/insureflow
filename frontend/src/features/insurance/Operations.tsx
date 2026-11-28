@@ -1,5 +1,6 @@
 import { useLocale } from '@/i18n/locale'
 import { useState } from 'react'
+import { ProductPhoto, PropertyPhoto, IntegrationBrand, WorkflowProgress } from './Visuals'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { api } from './api'
@@ -28,6 +29,7 @@ export function Customers() {
     [open, setOpen] = useState(false)
   const add = useAction((v: { name: string; email: string }) =>
     api.createCustomer(v.name, v.email),
+    'Customer saved.',
   )
   return (
     <>
@@ -116,7 +118,7 @@ export function Customers() {
               )
               .map((c) => ({
                 id: c.id,
-                cells: [c.name, c.email || '—', t(c.source)],
+                cells: [<span className="if-v6-customer"><span aria-hidden="true" className="if-v6-avatar">{c.name.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join('')}</span>{c.name}</span>, c.email || '—', t(c.source)],
               }))}
           />
         )}
@@ -243,6 +245,7 @@ function Calculator() {
   const quote = useAction(
     (v: { type: Product; coverage: number; months: number }) =>
       api.quote(v.type, v.coverage, v.months),
+    'Premium calculated successfully.',
   )
   return (
     <div className="if-grid">
@@ -310,6 +313,7 @@ function Calculator() {
         </form>
       </Panel>
       <Panel title="Estimated premium">
+        <ProductPhoto product={type} />
         <p className="if-muted">{t("Illustrative pricing only, not an official insurance quote.")}</p>
         <p className="if-amount my-5" aria-live="polite">
           {quote.data ? money(quote.data.premium) : '—'}
@@ -325,6 +329,7 @@ function Calculator() {
 function Properties() {
   const { t, money } = useLocale()
   const q = useData('integrations', integrations.load)
+  const [view, setView] = useState<'grid' | 'table'>('grid')
   return (
     <Panel
       title="Property reservations"
@@ -340,7 +345,27 @@ function Properties() {
           {q.data.emlaxError && (
             <ErrorMessage error={new Error(q.data.emlaxError)} />
           )}
-          <Table
+          <div className="if-v6-view-switch" role="group" aria-label={t('Property view')}>
+            <Button type="button" variant={view === 'grid' ? 'default' : 'outline'} aria-pressed={view === 'grid'} onClick={() => setView('grid')}>{t('Grid view')}</Button>
+            <Button type="button" variant={view === 'table' ? 'default' : 'outline'} aria-pressed={view === 'table'} onClick={() => setView('table')}>{t('Table view')}</Button>
+          </div>
+          {view === 'grid' ? (
+            q.data.properties.length ? <div className="if-v6-property-grid">
+              {q.data.properties.map(p => {
+                const existing = q.data?.applications.some(x => x.propertyId === p.id)
+                return <article className="if-v6-property-card" key={p.id}>
+                  <PropertyPhoto id={p.id} />
+                  <p className="if-muted">{t('Illustrative photo')}</p>
+                  <div className="flex flex-wrap justify-between gap-2"><h3>{p.unit}</h3><Status value={p.status} /></div>
+                  <p className="if-muted">{p.id} · {p.customer}</p>
+                  <strong className="if-v6-property-value">{money(p.value)}</strong>
+                  <div className="if-actions">
+                    {p.status === 'Reserved' && !existing ? <Button asChild><Link to="/applications" hash={'property-' + p.id}>{t('Create application')}</Link></Button> : existing ? <span className="if-muted">{t('Application already created')}</span> : <span className="if-muted">{t('Available')}</span>}
+                  </div>
+                </article>
+              })}
+            </div> : <p className="if-empty">{t('No records found.')}</p>
+          ) : (<Table
             headers={['Property', 'Customer', 'Value', 'Status']}
             rows={q.data.properties.map((p) => ({
               id: p.id,
@@ -351,7 +376,7 @@ function Properties() {
                 <Status value={p.status} />,
               ],
             }))}
-          />
+          />)}
           <Button asChild className="mt-4">
             <Link to="/applications">{t("Create insurance application")}</Link>
           </Button>
@@ -363,12 +388,13 @@ function Properties() {
 function Applications() {
   const { t, money } = useLocale()
   const q = useData('integrations', integrations.load),
-    [property, setProperty] = useState(''),
+    [property, setProperty] = useState(() => window.location.hash.startsWith('#property-') ? window.location.hash.slice(10) : ''),
     [key, setKey] = useState(() => crypto.randomUUID()),
     [selected, setSelected] = useState(''),
     [scenario, setScenario] = useState('exact')
   const create = useAction((v: { property: string; key: string }) =>
       integrations.create(v.property, v.key),
+      'Application created successfully.',
     ),
     act = useAction((v: { id: string; action: Action; data?: object }) =>
       integrations.action(v.id, v.action, v.data),
@@ -439,7 +465,7 @@ function Applications() {
               )}
               <ErrorMessage error={create.error} />
               <div>
-                <Button type="submit" disabled={!property || create.isPending}>
+                <Button type="submit" disabled={!available.some(p => p.id === property) || create.isPending}>
                   {create.isPending ? t("Creating…") : t("Create application")}
                 </Button>
               </div>
@@ -482,6 +508,7 @@ function Applications() {
               title={`${t('Application')} ${a.id}`}
               description={`${a.customer} · ${a.unit} · ${money(a.premiumMinor / 100)}`}
             >
+              <WorkflowProgress crm={a.crm} payment={a.payment} status={a.status} />
               <div className="if-card-list">
                 <div className="if-step">
                   <div className="flex justify-between gap-2">
@@ -573,9 +600,7 @@ function Applications() {
                 <p className="if-muted mt-3" role="status">{t("Processing…")}</p>
               )}
               <ErrorMessage error={act.error} />
-              {act.isSuccess && (
-                <p className="if-notice mt-3" role="status">{t("Request processed. Check the updated status above.")}</p>
-              )}
+              
             </Panel>
           )}
         </>
@@ -593,9 +618,10 @@ export function Claims() {
     [description, setDescription] = useState(''),
     [search, setSearch] = useState(''),
     [filter, setFilter] = useState('All')
-  const add = useAction(api.createClaim),
+  const add = useAction(api.createClaim, 'Claim submitted successfully.'),
     update = useAction((v: { id: string; status: ClaimStatus }) =>
       api.updateClaim(v.id, v.status),
+      'Claim status updated successfully.',
     )
   return (
     <>
@@ -827,6 +853,7 @@ export function IntegrationCenter() {
     d = useData('deals', integrations.deals)
   const act = useAction((id: string) =>
     integrations.action(id, 'sync', { simulateFailure: true }),
+    'CRM failure simulated. Retry from applications.',
   )
   return (
     <>
@@ -873,6 +900,7 @@ export function IntegrationCenter() {
           ] as const
         ).map((s) => (
           <Panel key={s.name} title={s.name}>
+            <IntegrationBrand name={s.name} />
             <Status
               value={
                 h.isPending ? 'Checking' : s.ok ? 'Connected' : 'Unavailable'

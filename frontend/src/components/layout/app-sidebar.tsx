@@ -1,6 +1,6 @@
 import { useLocale } from '@/i18n/locale'
 import { Link } from '@tanstack/react-router'
-import { ShieldCheck, Settings } from 'lucide-react'
+import { ShieldCheck, Settings, Info } from 'lucide-react'
 import { useLayout } from '@/context/layout-provider'
 import {
   Sidebar,
@@ -24,32 +24,34 @@ export function AppSidebar() {
           onClick={() => setOpenMobile(false)}
           className="flex items-center gap-3 rounded-lg p-2"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <span className="if-brand-logo grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
             <ShieldCheck className="size-5" />
           </span>
           <span className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <strong className="block text-lg font-bold">InsureFlow</strong>
-            <span className="block truncate text-xs text-muted-foreground">{t("Insurance management")}</span>
+            <strong className="if-brand-title block text-lg font-bold">InsureFlow</strong>
+            <span className="if-brand-subtitle block text-xs text-muted-foreground">{t("Insurance management")}</span>
           </span>
         </Link>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="if-workspace-nav">
         {sidebarData.navGroups.map((g) => (
           <NavGroup key={g.title} {...g} />
         ))}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="if-platform-nav">
+        <p className="if-platform-label px-2 text-xs font-semibold text-muted-foreground group-data-[collapsible=icon]:hidden">{t('Platform')}</p>
+        <NavGroup title="" items={[{ title: 'About us', url: '/about', icon: Info }]} />
         <Link
           to="/settings"
           onClick={() => setOpenMobile(false)}
-          className="flex items-center gap-2 rounded-md p-2 text-sm hover:bg-sidebar-accent"
+          className="if-platform-settings flex items-center gap-3 rounded-md p-2 text-sm hover:bg-sidebar-accent"
         >
-          <Settings className="size-4 shrink-0" />
+          <Settings className="size-6 shrink-0" />
           <span className="group-data-[collapsible=icon]:hidden">{t("Settings")}</span>
         </Link>
         <div className="rounded-lg border p-3 text-xs group-data-[collapsible=icon]:hidden">
           <strong>{t("Demo workspace")}</strong>
-          <p className="mt-1 text-muted-foreground">{t("Fictional records only")}</p>
+          
         </div>
       </SidebarFooter>
       <SidebarRail />

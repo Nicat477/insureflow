@@ -9,8 +9,8 @@ export function PageShell({ children }: { children: ReactNode }) {
   return (
     <>
       <Header className="border-b bg-card">
-        <span className="me-auto min-w-0 truncate text-sm font-medium">{t("Insurance workspace")}</span>
-        <span className="hidden text-xs text-muted-foreground sm:inline">{t("Demo · fictional data only")}</span>
+        <span className="if-workspace-title me-auto min-w-0 truncate text-sm font-medium">{t("Insurance workspace")}</span>
+        <span className="hidden text-xs text-muted-foreground sm:inline">Demo</span>
         <LanguageSwitcher />
         <ThemeSwitch />
       </Header>

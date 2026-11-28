@@ -24,6 +24,7 @@ import { Route as AuthenticatedClaimsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authenticated/calculator'
 import { Route as AuthenticatedBitrix24RouteImport } from './routes/_authenticated/bitrix24'
 import { Route as AuthenticatedApplicationsRouteImport } from './routes/_authenticated/applications'
+import { Route as AuthenticatedAboutRouteImport } from './routes/_authenticated/about'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors404RouteImport } from './routes/(errors)/404'
@@ -128,6 +129,11 @@ const AuthenticatedApplicationsRoute =
     path: '/applications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAboutRoute = AuthenticatedAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const errors503Route = errors503RouteImport.update({
   id: '/(errors)/503',
   path: '/503',
@@ -285,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/about': typeof AuthenticatedAboutRoute
   '/applications': typeof AuthenticatedApplicationsRoute
   '/bitrix24': typeof AuthenticatedBitrix24Route
   '/calculator': typeof AuthenticatedCalculatorRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/about': typeof AuthenticatedAboutRoute
   '/applications': typeof AuthenticatedApplicationsRoute
   '/bitrix24': typeof AuthenticatedBitrix24Route
   '/calculator': typeof AuthenticatedCalculatorRoute
@@ -369,6 +377,7 @@ export interface FileRoutesById {
   '/(errors)/404': typeof errors404Route
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
+  '/_authenticated/about': typeof AuthenticatedAboutRoute
   '/_authenticated/applications': typeof AuthenticatedApplicationsRoute
   '/_authenticated/bitrix24': typeof AuthenticatedBitrix24Route
   '/_authenticated/calculator': typeof AuthenticatedCalculatorRoute
@@ -413,6 +422,7 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/about'
     | '/applications'
     | '/bitrix24'
     | '/calculator'
@@ -452,6 +462,7 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/about'
     | '/applications'
     | '/bitrix24'
     | '/calculator'
@@ -496,6 +507,7 @@ export interface FileRouteTypes {
     | '/(errors)/404'
     | '/(errors)/500'
     | '/(errors)/503'
+    | '/_authenticated/about'
     | '/_authenticated/applications'
     | '/_authenticated/bitrix24'
     | '/_authenticated/calculator'
@@ -645,6 +657,13 @@ declare module '@tanstack/react-router' {
       path: '/applications'
       fullPath: '/applications'
       preLoaderRoute: typeof AuthenticatedApplicationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/about': {
+      id: '/_authenticated/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AuthenticatedAboutRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/(errors)/503': {
@@ -864,6 +883,7 @@ const AuthenticatedSettingsRouteRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
+  AuthenticatedAboutRoute: typeof AuthenticatedAboutRoute
   AuthenticatedApplicationsRoute: typeof AuthenticatedApplicationsRoute
   AuthenticatedBitrix24Route: typeof AuthenticatedBitrix24Route
   AuthenticatedCalculatorRoute: typeof AuthenticatedCalculatorRoute
@@ -887,6 +907,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
+  AuthenticatedAboutRoute: AuthenticatedAboutRoute,
   AuthenticatedApplicationsRoute: AuthenticatedApplicationsRoute,
   AuthenticatedBitrix24Route: AuthenticatedBitrix24Route,
   AuthenticatedCalculatorRoute: AuthenticatedCalculatorRoute,

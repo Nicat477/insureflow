@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { api } from './api'
 import { integrations } from './integrationApi'
 import { products } from './types'
+import { PolicyChart } from './Visuals'
 import { Heading, Panel, Status, Table, QueryState, useData } from './ui'
 export default function InsuranceOverview() {
   const { t, money } = useLocale()
@@ -68,31 +69,7 @@ export default function InsuranceOverview() {
               title="Policy distribution"
               description="Current records by insurance product"
             >
-              {products.map((p) => {
-                const count = data.filter((x) => x.type === p).length
-                return (
-                  <div key={p}>
-                    <div className="flex justify-between text-sm">
-                      <span>{t(p)}</span>
-                      <strong>{count}</strong>
-                    </div>
-                    <div
-                      className="if-bar"
-                      role="meter"
-                      aria-label={t(p)}
-                      aria-valuenow={count}
-                      aria-valuemin={0}
-                      aria-valuemax={Math.max(1, data.length)}
-                    >
-                      <div
-                        style={{
-                          width: `${(count / Math.max(1, data.length)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
+              <PolicyChart items={products.map(name => ({ name, count: data.filter(p => p.type === name).length }))} />
             </Panel>
             <Panel
               title="System connections"

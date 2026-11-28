@@ -148,47 +148,36 @@
 }
 
 /* InsureFlow Corporate Theme — Dark Mode */
-
 .dark {
-  --background: #0d1916;
-  --foreground: #e8f4ef;
-
-  --card: #14241e;
-  --card-foreground: #e8f4ef;
-
-  --popover: #1a3026;
-  --popover-foreground: #e8f4ef;
-
-  --primary: #56d6a5;
-  --primary-foreground: #08251a;
-
-  --secondary: #234a3a;
-  --secondary-foreground: #d8f5e8;
-
-  --muted: #1c342a;
-  --muted-foreground: #a1b9ad;
-
-  --accent: #234a3a;
-  --accent-foreground: #78e1b5;
-
+  --background: #0b1018;
+  --foreground: #e9eff8;
+  --card: #111923;
+  --card-foreground: #e9eff8;
+  --popover: #192331;
+  --popover-foreground: #e9eff8;
+  --primary: #22d3ee;
+  --primary-foreground: #083344;
+  --secondary: #173140;
+  --secondary-foreground: #c4f1fa;
+  --muted: #1b2533;
+  --muted-foreground: #a5b4c7;
+  --accent: #173140;
+  --accent-foreground: #67e8f9;
   --destructive: #f87171;
-
-  --border: #294138;
-  --input: #526f60;
-  --ring: #56d6a5;
-
-  --chart-1: #56d6a5;
-  --chart-2: #009b70;
-  --chart-3: #38bdf8;
-  --chart-4: #a7f3d0;
-  --chart-5: #818cf8;
-
-  --sidebar: #14241e;
-  --sidebar-foreground: #e8f4ef;
-  --sidebar-primary: #56d6a5;
-  --sidebar-primary-foreground: #08251a;
-  --sidebar-accent: #234a3a;
-  --sidebar-accent-foreground: #78e1b5;
-  --sidebar-border: #294138;
-  --sidebar-ring: #56d6a5;
+  --border: #2b3747;
+  --input: #435366;
+  --ring: #22d3ee;
+  --chart-1: #22d3ee;
+  --chart-2: #38bdf8;
+  --chart-3: #818cf8;
+  --chart-4: #a5f3fc;
+  --chart-5: #94a3b8;
+  --sidebar: #111923;
+  --sidebar-foreground: #e9eff8;
+  --sidebar-primary: #22d3ee;
+  --sidebar-primary-foreground: #083344;
+  --sidebar-accent: #173140;
+  --sidebar-accent-foreground: #67e8f9;
+  --sidebar-border: #2b3747;
+  --sidebar-ring: #22d3ee;
 }
