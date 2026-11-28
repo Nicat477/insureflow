@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { makeAccountStore } from './account-store.mjs';
 
 const table = 'insureflow_private.workspace_state';
 export function assertSnapshot(snapshot) {
@@ -79,6 +80,7 @@ export function makePostgresStore(pool) {
     } finally { client.release(broken); }
   }
   return {
+    ...makeAccountStore(pool, assertSnapshot),
     transaction, initialize,
     async check() {
       const { rows } = await pool.query(`SELECT 1 FROM ${table} WHERE id = 1`);

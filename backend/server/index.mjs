@@ -8,11 +8,14 @@ import { seed, validateClaim, claimStatuses, estimate } from './domain.mjs';
 import { resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { connectPostgres, storageMode } from './postgres-store.mjs';
+import { authConfig, verifiedUser } from './account-auth.mjs';
+const accounts = authConfig();
 // InsureFlow PostgreSQL storage v1
 const mode = storageMode();
+if (accounts && mode !== 'postgres') throw Error('Account mode requires PostgreSQL.');
 const storage = mode === 'postgres' ? await connectPostgres() : null;
 if (storage) {
-  try { await storage.check(); }
+  try { await storage.check(); if (accounts) await storage.checkAccounts(); }
   catch { await storage.close(); throw new Error('PostgreSQL unavailable or uninitialized. Check configuration and run db:init locally first.'); }
 }
 let activeSnapshot = null;
@@ -59,7 +62,7 @@ async function body(req) {
   return JSON.parse(text);
 }
 const hosted = process.env.HOSTED_DEMO === '1';
-const web = hosted ? hosting({ directory: process.env.STATIC_DIR, password: process.env.DEMO_PASSWORD }) : null;
+const web = hosted ? hosting({ directory: process.env.STATIC_DIR, password: accounts ? randomUUID() : process.env.DEMO_PASSWORD }) : null;
 const allowedOrigins = [
   'http://localhost:5173', 'http://127.0.0.1:5173',
   'http://localhost:4173', 'http://127.0.0.1:4173',
@@ -91,9 +94,21 @@ function serial(fn) {
   queue = next.catch(() => {});
   return next;
 }
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
-  if (web) {
+  if (req.method === 'GET' && path === '/api/auth/config') return send(res, 200, accounts ? { enabled: true, ...accounts } : { enabled: false });
+  if (accounts && req.method === 'GET' && path === '/api/health') {
+    try { await storage.checkAccounts(); return send(res, 200, { ok:true, mode:hosted?'hosted-demo':'local-demo', storage:mode, auth:'supabase' }); }
+    catch { return send(res, 503, { ok:false, storage:mode, auth:'supabase' }); }
+  }
+  let userId;
+  if (accounts) {
+    if (web && path !== '/api' && !path.startsWith('/api/')) { void web.serve(req,res,path); return; }
+    try { userId = await verifiedUser(req.headers.authorization, accounts); }
+    catch { return send(res, 503, { message: 'Authentication service unavailable.' }); }
+    if (!userId) return send(res, 401, { message: 'Sign in to access your workspace.' });
+  }
+  if (web && !accounts) {
     if (req.method === 'GET' && path === '/api/health') {
       if (!storage) return send(res, 200, { ok: true, mode: 'hosted-demo', storage: 'json' });
       return storage.check().then(
@@ -121,7 +136,8 @@ const server = http.createServer((req, res) => {
   return serial(async () => {
     if (!storage) return handle(req, res, path);
     try {
-      const reply = await storage.transaction(async (snapshot) => {
+      const transaction = accounts ? (fn) => storage.accountTransaction(userId, fn) : (fn) => storage.transaction(fn);
+      const reply = await transaction(async (snapshot) => {
         activeSnapshot = snapshot;
         db = snapshot.db;
         let status, headers, responseBody;

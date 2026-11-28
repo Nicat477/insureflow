@@ -1,3 +1,4 @@
+import { accountAuthorization } from '@/features/account/account-client'
 import type {
   Policy,
   Claim,
@@ -7,11 +8,15 @@ import type {
   Customer,
 } from './types'
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const authorization = await accountAuthorization()
+  const headers = new Headers(init?.headers)
+  headers.set('Content-Type', 'application/json')
+  if (authorization) headers.set('Authorization', authorization)
   let response: Response
   try {
     response = await fetch('/api' + path, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      headers,
       signal: AbortSignal.timeout(12000),
     })
   } catch {

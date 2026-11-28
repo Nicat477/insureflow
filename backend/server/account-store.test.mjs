@@ -1,0 +1,8 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { makeAccountStore } from './account-store.mjs';
+const a='12345678-1234-1234-1234-123456789abc', b='12345678-1234-1234-1234-123456789abd';
+function fixture(){let data=new Map(), temp;const calls=[];const c={async query(sql,args){calls.push([sql,args]);if(sql==='BEGIN')temp=structuredClone(data);if(sql.startsWith('INSERT')){if(temp.has(args[0]))return {rowCount:0};temp.set(args[0],JSON.parse(args[1]));return {rowCount:1};}if(sql.startsWith('SELECT payload')&&sql.includes('user_id'))return {rows:[{payload:temp.get(args[0])}]};if(sql.startsWith('UPDATE'))temp.set(args[0],JSON.parse(args[1]));if(sql==='COMMIT')data=temp;return {rows:[]};},release(){}};return {s:makeAccountStore({connect:async()=>c},v=>v),data:()=>data,calls};}
+test('two account IDs have independent customers, CRM and finance',async()=>{const f=fixture();await f.s.accountTransaction(a,s=>{s.db.customers=[{name:'A'}];s.crm.push({id:'a'});s.finance.push({id:'a'});return {commit:true};});await f.s.accountTransaction(b,s=>{assert.equal(s.db.customers,undefined);assert.equal(s.crm.length,0);assert.equal(s.finance.length,0);return {commit:true};});assert.equal(f.data().get(a).db.customers[0].name,'A');assert.ok(f.calls.some(([sql,args])=>sql.includes('FOR UPDATE')&&args?.[0]===a));});
+test('failed operation rolls back account changes',async()=>{const f=fixture();await f.s.accountTransaction(a,s=>{s.crm.push({id:'x'});return {commit:false};});assert.equal(f.data().size,0);});
+test('invalid UUID cannot reach SQL',async()=>{const f=fixture();await assert.rejects(f.s.accountTransaction('bad',()=>{}),/Invalid/);assert.equal(f.calls.length,0);});
