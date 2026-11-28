@@ -30,7 +30,7 @@ function DemoSettings() {
         </Field>
       </Panel>
       <Panel title="About this workspace">
-        <p className="if-muted">{t("InsureFlow is an independent, fictional insurance portfolio demo. It runs on your computer, does not use real accounts, and does not connect to actual Emlax, Bitrix24 or 1C systems. Do not enter personal or financial information.")}</p>
+        <p className="if-muted">{t("InsureFlow is an independent, fictional insurance portfolio demo. It does not connect to actual Emlax, Bitrix24 or 1C systems. Do not enter personal or financial information.")}</p>
       </Panel>
     </PageShell>
   )

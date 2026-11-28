@@ -1,0 +1,10 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { authConfig, verifiedUser } from './account-auth.mjs';
+const config = authConfig({AUTH_MODE:'supabase', SUPABASE_URL:'https://example.supabase.co', SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test'});
+const id='12345678-1234-1234-1234-123456789abc';
+test('legacy mode remains opt-in-compatible and invalid auth config fails closed',()=>{assert.equal(authConfig({}),null);assert.throws(()=>authConfig({AUTH_MODE:'supabase'}));assert.throws(()=>authConfig({AUTH_MODE:'supabase',SUPABASE_URL:'https://example.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_secret_test'}));});
+test('missing token does not call provider',async()=>assert.equal(await verifiedUser('',config,()=>{throw Error('unexpected');}),null));
+test('provider verifies identity rather than trusting user supplied ID',async()=>assert.equal(await verifiedUser('Bearer test.token',config,async(url,opts)=>{assert.equal(url,'https://example.supabase.co/auth/v1/user');assert.equal(opts.headers.Authorization,'Bearer test.token');return {ok:true,json:async()=>({id,email_confirmed_at:'2026-01-01'})};}),id));
+test('invalid and unverified tokens rejected',async()=>{assert.equal(await verifiedUser('Bearer abc',config,async()=>({ok:false,status:401})),null);assert.equal(await verifiedUser('Bearer abc',config,async()=>({ok:true,json:async()=>({id})})),null);});
+test('provider failure fails closed',async()=>assert.rejects(verifiedUser('Bearer abc',config,async()=>({ok:false,status:503})),/unavailable/));
