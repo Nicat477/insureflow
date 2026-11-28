@@ -13,3 +13,7 @@ A GitHub repository containing this project, a Render account meeting the platfo
 The access gate is a shared password, not a real account system. The free instance may sleep after inactivity and lose runtime JSON data on restart, sleep or redeploy. Do not store real information. Only invite trusted reviewers. Rotate the demo password when appropriate or disable the service when no longer needed.
 
 References: https://render.com/docs/blueprint-spec ; https://render.com/docs/free ; https://render.com/docs/docker
+
+## Optional PostgreSQL persistence
+
+For a shared, persistent fictional demo database, follow [POSTGRESQL.md](POSTGRESQL.md). The default JSON mode still uses temporary Render storage.

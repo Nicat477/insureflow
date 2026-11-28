@@ -37,9 +37,9 @@ async function parse(req) {
   }
   return JSON.parse(s);
 }
-export async function startMocks(ports = [4101, 4102, 4103]) {
-  const crm = store('mock-crm'),
-    finance = store('mock-finance');
+export async function startMocks(ports = [4101, 4102, 4103], options = {}) {
+  const crm = options.crm || store('mock-crm'),
+    finance = options.finance || store('mock-finance');
   const handlers = [
     async (req, res) => {
       if (req.method === 'GET' && req.url === '/health')
@@ -95,11 +95,12 @@ export async function startMocks(ports = [4101, 4102, 4103]) {
   const servers = [];
   try {
     for (let i = 0; i < handlers.length; i++) {
-      const server = http.createServer((req, res) =>
-        handlers[i](req, res).catch(() =>
+      const server = http.createServer((req, res) => {
+        if (options.token && req.headers['x-insureflow-mock-token'] !== options.token) return json(res, 403, {});
+        return handlers[i](req, res).catch(() =>
           json(res, 400, { message: 'Invalid mock request' }),
-        ),
-      );
+        );
+      });
       await new Promise((resolve, reject) => {
         server.once('error', reject);
         server.listen(ports[i], '127.0.0.1', resolve);
@@ -112,15 +113,15 @@ export async function startMocks(ports = [4101, 4102, 4103]) {
   }
   return { servers, ports: servers.map((s) => s.address().port) };
 }
-export function mockClient(ports) {
+export function mockClient(ports, token) {
   async function req(i, path, data) {
     const res = await fetch('http://127.0.0.1:' + ports[i] + path, {
       signal: AbortSignal.timeout(3000),
+      headers: { ...(token ? { 'x-insureflow-mock-token': token } : {}), ...(data === undefined ? {} : { 'Content-Type': 'application/json' }) },
       ...(data === undefined
         ? {}
         : {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
           }),
     });

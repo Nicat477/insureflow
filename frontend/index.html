@@ -9,7 +9,22 @@
       name="description"
       content="Independent insurance management portfolio demo with simulated property, CRM and finance integrations."
     />
-    <meta name="theme-color" content="#006b49" />
+    <meta name="theme-color" content="#f5f7fa" />
+    <meta name="color-scheme" content="only light" />
+    <style>html{background:#f5f7fa;color-scheme:only light}html.dark{background:#0b1018;color-scheme:dark}</style>
+    <script>
+      (function () {
+        var match = document.cookie.match(/(?:^|;\s*)vite-ui-theme=([^;]+)/);
+        var chosen = match ? match[1] : 'system';
+        var dark = chosen === 'dark' || (chosen !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var mode = dark ? 'dark' : 'light';
+        var scheme = dark ? 'dark' : 'only light';
+        document.documentElement.classList.add(mode);
+        document.documentElement.style.colorScheme = scheme;
+        document.querySelector('meta[name="color-scheme"]').setAttribute('content', scheme);
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#0b1018' : '#f5f7fa');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

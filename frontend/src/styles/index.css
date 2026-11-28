@@ -85,3 +85,10 @@
     height: 0;
   }
 }
+
+/* Explicit mobile color scheme */
+html, html.light { color-scheme: only light; background-color: var(--background); }
+html.dark { color-scheme: dark; background-color: var(--background); }
+html.light body, html.light #root { background-color: var(--background); color: var(--foreground); }
+html.dark body, html.dark #root { background-color: var(--background); color: var(--foreground); }
+#root { min-height: 100svh; }

@@ -8,3 +8,7 @@ backend/server/data.json
 backend/server/mock-crm.json
 backend/server/mock-finance.json
 backend/server/*.tmp
+backend/.local-backups/
+**/*.crt
+**/*.pem
+**/*.cer

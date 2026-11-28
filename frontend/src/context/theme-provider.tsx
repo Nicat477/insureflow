@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useMemo } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { getCookie, setCookie, removeCookie } from '@/lib/cookies'
 
 type Theme = 'dark' | 'light' | 'system'
@@ -38,42 +38,36 @@ export function ThemeProvider({
   storageKey = THEME_COOKIE_NAME,
   ...props
 }: ThemeProviderProps) {
-  const [theme, _setTheme] = useState<Theme>(
-    () => (getCookie(storageKey) as Theme) || defaultTheme
+  const [theme, _setTheme] = useState<Theme>(() => {
+    const saved = getCookie(storageKey)
+    return saved === 'light' || saved === 'dark' || saved === 'system' ? saved : defaultTheme
+  })
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   )
-
-  // Optimized: Memoize the resolved theme calculation to prevent unnecessary re-computations
-  const resolvedTheme = useMemo((): ResolvedTheme => {
-    if (theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-    }
-    return theme as ResolvedTheme
-  }, [theme])
+  const resolvedTheme: ResolvedTheme = theme === 'system' ? systemTheme : theme
 
   useEffect(() => {
-    const root = window.document.documentElement
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-
-    const applyTheme = (currentResolvedTheme: ResolvedTheme) => {
-      root.classList.remove('light', 'dark') // Remove existing theme classes
-      root.classList.add(currentResolvedTheme) // Add the new theme class
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const sync = () => setSystemTheme(media.matches ? 'dark' : 'light')
+    sync()
+    if (media.addEventListener) {
+      media.addEventListener('change', sync)
+      return () => media.removeEventListener('change', sync)
     }
+    media.addListener(sync)
+    return () => media.removeListener(sync)
+  }, [])
 
-    const handleChange = () => {
-      if (theme === 'system') {
-        const systemTheme = mediaQuery.matches ? 'dark' : 'light'
-        applyTheme(systemTheme)
-      }
-    }
-
-    applyTheme(resolvedTheme)
-
-    mediaQuery.addEventListener('change', handleChange)
-
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [theme, resolvedTheme])
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.remove('light', 'dark')
+    root.classList.add(resolvedTheme)
+    const scheme = resolvedTheme === 'dark' ? 'dark' : 'only light'
+    root.style.colorScheme = scheme
+    document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', scheme)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'dark' ? '#0b1018' : '#f5f7fa')
+  }, [resolvedTheme])
 
   const setTheme = (theme: Theme) => {
     setCookie(storageKey, theme, THEME_COOKIE_MAX_AGE)
@@ -82,7 +76,7 @@ export function ThemeProvider({
 
   const resetTheme = () => {
     removeCookie(storageKey)
-    _setTheme(DEFAULT_THEME)
+    _setTheme(defaultTheme)
   }
 
   const contextValue = {

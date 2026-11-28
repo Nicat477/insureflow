@@ -4,3 +4,7 @@ server/data.json
 server/mock-crm.json
 server/mock-finance.json
 server/*.tmp
+/.local-backups/
+*.crt
+*.pem
+*.cer

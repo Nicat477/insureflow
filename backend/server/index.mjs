@@ -7,19 +7,37 @@ import { startMocks, mockClient } from './mocks.mjs';
 import { seed, validateClaim, claimStatuses, estimate } from './domain.mjs';
 import { resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { connectPostgres, storageMode } from './postgres-store.mjs';
+// InsureFlow PostgreSQL storage v1
+const mode = storageMode();
+const storage = mode === 'postgres' ? await connectPostgres() : null;
+if (storage) {
+  try { await storage.check(); }
+  catch { await storage.close(); throw new Error('PostgreSQL unavailable or uninitialized. Check configuration and run db:init locally first.'); }
+}
+let activeSnapshot = null;
+console.log('InsureFlow storage: ' + mode);
 const root = process.env.DATA_DIR
   ? pathToFileURL(resolve(process.env.DATA_DIR) + sep)
   : new URL('./', import.meta.url);
-mkdirSync(root, { recursive: true });
 const file = new URL('data.json', root);
 let db;
-try {
-  db = JSON.parse(readFileSync(file, 'utf8'));
-} catch (e) {
-  if (e.code !== 'ENOENT') throw e;
-  db = structuredClone(seed);
+if (!storage) {
+  mkdirSync(root, { recursive: true });
+  try {
+    db = JSON.parse(readFileSync(file, 'utf8'));
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e;
+    db = structuredClone(seed);
+  }
 }
 function commit(next) {
+  if (storage) {
+    if (!activeSnapshot) throw new Error('No active database transaction.');
+    activeSnapshot.db = next;
+    db = next;
+    return;
+  }
   const tmp = new URL('data.tmp', root);
   writeFileSync(tmp, JSON.stringify(next, null, 2));
   renameSync(tmp, file);
@@ -47,13 +65,25 @@ const allowedOrigins = [
   'http://localhost:4173', 'http://127.0.0.1:4173',
   ...(hosted && process.env.RENDER_EXTERNAL_URL ? [new URL(process.env.RENDER_EXTERNAL_URL).origin] : []),
 ];
+const mockToken = storage ? randomUUID() : undefined;
+const scopedStore = (key) => ({
+  read: () => {
+    if (!activeSnapshot) throw new Error('No active mock transaction.');
+    return activeSnapshot[key];
+  },
+  write: (value) => {
+    if (!activeSnapshot) throw new Error('No active mock transaction.');
+    activeSnapshot[key] = value;
+  },
+});
 const mocks = await startMocks(
   process.env.MOCK_EPHEMERAL === '1' ? [0, 0, 0] : undefined,
+  storage ? { crm: scopedStore('crm'), finance: scopedStore('finance'), token: mockToken } : {},
 );
 console.log(
   `Local demo mocks: Emlax ${mocks.ports[0]} | Bitrix24 ${mocks.ports[1]} | 1C ${mocks.ports[2]}`,
 );
-const external = mockClient(mocks.ports);
+const external = mockClient(mocks.ports, mockToken);
 const integration = engine({ read: () => db, commit, external });
 let queue = Promise.resolve();
 function serial(fn) {
@@ -64,7 +94,13 @@ function serial(fn) {
 const server = http.createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   if (web) {
-    if (req.method === 'GET' && path === '/api/health') return send(res, 200, { ok: true, mode: 'hosted-demo' });
+    if (req.method === 'GET' && path === '/api/health') {
+      if (!storage) return send(res, 200, { ok: true, mode: 'hosted-demo', storage: 'json' });
+      return storage.check().then(
+        () => send(res, 200, { ok: true, mode: 'hosted-demo', storage: 'postgres' }),
+        () => send(res, 503, { ok: false, mode: 'hosted-demo', storage: 'postgres' }),
+      );
+    }
     const publicDemo = process.env.PUBLIC_DEMO === '1';
     if (publicDemo) {
       const allowed =
@@ -83,6 +119,33 @@ const server = http.createServer((req, res) => {
     if (path !== '/api' && !path.startsWith('/api/')) { void web.serve(req, res, path); return; }
   }
   return serial(async () => {
+    if (!storage) return handle(req, res, path);
+    try {
+      const reply = await storage.transaction(async (snapshot) => {
+        activeSnapshot = snapshot;
+        db = snapshot.db;
+        let status, headers, responseBody;
+        // Hold the HTTP result until the database transaction commits.
+        const buffered = {
+          writeHead(code, h) { status = code; headers = h; },
+          end(value) { responseBody = value; },
+        };
+        try {
+          await handle(req, buffered, path);
+          if (status === undefined || responseBody === undefined) throw new Error('Missing API response.');
+          return { status, headers, responseBody, commit: status < 400 };
+        } finally { activeSnapshot = null; db = undefined; }
+      });
+      res.writeHead(reply.status, reply.headers);
+      res.end(reply.responseBody);
+    } catch {
+      console.error('PostgreSQL request failed; transaction rolled back or connection interrupted.');
+      if (!res.headersSent) send(res, 503, { message: 'Request could not be completed.' });
+      else res.destroy();
+    }
+  });
+});
+async function handle(req, res, path) {
     try {
       if (
         req.method !== 'GET' &&
@@ -163,7 +226,7 @@ const server = http.createServer((req, res) => {
       }
 
       if (req.method === 'GET' && path === '/api/health')
-        return send(res, 200, { ok: true, mode: 'local-demo' });
+        return send(res, 200, { ok: true, mode: 'local-demo', storage: mode });
       if (path.startsWith('/api/integrations')) {
         const result = await (async () => {
           if (req.method === 'GET' && path === '/api/integrations')
@@ -253,8 +316,8 @@ const server = http.createServer((req, res) => {
               : 'Request could not be completed.',
       });
     }
-  });
-});
+}
+server.requestTimeout = 15000;
 const host = hosted ? '0.0.0.0' : '127.0.0.1';
 server.listen(Number(process.env.PORT ?? 3001), host, () =>
   console.log('InsureFlow demo API: http://' + host + ':' + server.address().port),

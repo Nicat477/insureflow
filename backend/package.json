@@ -1,1 +1,19 @@
-{"name":"insureflow-api","version":"1.0.0","private":true,"type":"module","engines":{"node":">=22"},"scripts":{"dev":"node --watch server/index.mjs","start":"node server/index.mjs","test":"node --test server/*.test.mjs"}}
+{
+  "name": "insureflow-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch server/index.mjs",
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "test": "node --test server/*.test.mjs",
+    "db:init": "node --env-file-if-exists=.env server/database-cli.mjs init",
+    "db:backup": "node --env-file-if-exists=.env server/database-cli.mjs backup"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
+  }
+}
